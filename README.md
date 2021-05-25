@@ -9,4 +9,7 @@ The aim of the repo is to find (and visualise)
 Top 10 locations on a daily basis and 
 Top 10 locations on a monthly basis
 
-To run type python Pedestrians.py
+To run type 
+```
+python Pedestrians.py
+```
