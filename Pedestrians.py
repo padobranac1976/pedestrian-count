@@ -1,8 +1,9 @@
 import numpy as np
 import pandas as pd
 import sys
+from sodapy import Socrata
 
-BUFFER = 60
+BUFFER = 58
 
 
 def progressbar(it, prefix="", size=30):
@@ -80,23 +81,43 @@ def combine_df(sensors, pedestrians, mode):
 
 
 def find_top_10(df, mode):
-    return df
+    dates = list(df["Date_Time"].unique())
+    all_data = None
+    for i in progressbar(range(len(dates)), "Filtering '{}' Data".format(mode)):
+        date_x = df[df["Date_Time"] == dates[i]]
+        top_10 = date_x.sort_values("Cumulative_Counts", ascending=False)[:10]
+        if all_data is None:
+            all_data = top_10
+        else:
+            all_data = all_data.append(top_10)
+
+    return all_data
 
 
-run_analysis = True
+if __name__ == "__main__":
+    run_analysis = True
+    open_from_web = False
+    if open_from_web:
+        client = Socrata("data.melbourne.vic.gov.au", None)
 
-if run_analysis:
-    sensor_location_df = pd.read_csv("Pedestrian_Counting_System_-_Sensor_Locations.csv")
-    pedestrians_df = pd.read_csv("Pedestrian_Counting_System_-_Monthly__counts_per_hour_.csv")
+        sensor_locations = client.get("h57g-5234", limit=100)
+        sensors_df = pd.DataFrame.from_records(sensor_locations)
 
-    monthly_df = combine_df(sensor_location_df, pedestrians_df, "month")
-    monthly_df.to_csv("./monthly.csv", index=False)
-    daily_df = combine_df(sensor_location_df, pedestrians_df, "day")
-    daily_df.to_csv("./daily.csv", index=False)
+        pedestrians = client.get("b2ak-trbp", limit=4000000)
+        pedestrians_df = pd.DataFrame.from_records(pedestrians)
+    else:
+        sensor_location_df = pd.read_csv("Pedestrian_Counting_System_-_Sensor_Locations.csv")
+        pedestrians_df = pd.read_csv("Pedestrian_Counting_System_-_Monthly__counts_per_hour.csv")
 
-else:
-    monthly_df = pd.read_csv("monthly.csv")
-    daily_df = pd.read_csv("daily.csv")
+    if run_analysis:
+        monthly_df = combine_df(sensor_location_df, pedestrians_df, "month")
+        monthly_df.to_csv("./monthly.csv", index=False)
+        daily_df = combine_df(sensor_location_df, pedestrians_df, "day")
+        daily_df.to_csv("./daily.csv", index=False)
 
-top_10_monthly_df = find_top_10(monthly_df, "month")
-top_10_daily_df = find_top_10(daily_df, "day")
+    else: # stored locally
+        monthly_df = pd.read_csv("monthly.csv")
+        daily_df = pd.read_csv("daily.csv")
+
+    top_10_monthly_df = find_top_10(monthly_df, "month")
+    top_10_daily_df = find_top_10(daily_df, "day")
