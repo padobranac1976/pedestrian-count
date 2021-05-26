@@ -63,7 +63,7 @@ def combine_df(s, ped, mode, top_x):
     pedestrian_df = update_date_time(ped, mode)
     dates = pedestrian_df["Date_Time"].unique()
     acc_ped_df = None
-    for i in progressbar(range(len(dates)), "Accumulating pedestrians / {}: "):
+    for i in progressbar(range(len(dates)), "Accumulating pedestrians / {}: ".format(mode)):
         frame = pedestrian_df[pedestrian_df["Date_Time"] == dates[i]]
         top = accumulate_pedestrians(frame, top_x, s)
 
