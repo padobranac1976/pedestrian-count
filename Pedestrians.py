@@ -7,6 +7,10 @@ BUFFER = 56
 
 
 def progressbar(it, prefix="", size=50):
+    """
+    Implementation of the progress bar for better user experience as it gives feedback to the user while
+    data is being processed.
+    """
     count = len(it)
 
     def show(j):
@@ -22,6 +26,12 @@ def progressbar(it, prefix="", size=50):
 
 
 def update_date_time(df, mode):
+    """ Returns pandas data frame with updated "Date_Time" column
+
+    In order to make it easier to identify the unique dates the hours have been removed from the "Date_Time" column
+    when formatting for top 10 daily locations.
+    Similarly when formatting for monthly locations both time as well as day has been removed.
+    """
     print("-" * BUFFER)
     print("Converting date / time format to '{}'-ly frequency...".format(mode))
     print("-" * BUFFER)
@@ -38,6 +48,10 @@ def update_date_time(df, mode):
 
 
 def accumulate_pedestrians(df, x, s):
+    """ Returns pandas data frame containing top x locations
+
+    Top 10 locations identified for a unique date (either day or month).
+    """
     sensors = df["Sensor_ID"].unique()
     top = None
     for i in range(len(sensors)):
@@ -60,6 +74,11 @@ def accumulate_pedestrians(df, x, s):
 
 
 def combine_df(s, ped, mode, top_x):
+    """ Returns pandas data frame with all relevant data
+
+    Combines data from pedestrian count and sensor location tables and stores it in a single data frame.
+    Makes calls to "update_date_time" and "accumulate_pedestrians" functions
+    """
     pedestrian_df = update_date_time(ped, mode)
     dates = pedestrian_df["Date_Time"].unique()
     acc_ped_df = None
@@ -75,7 +94,6 @@ def combine_df(s, ped, mode, top_x):
 
 
 if __name__ == "__main__":
-    run_analysis = True
     open_from_web = False
 
     if open_from_web:
@@ -91,4 +109,7 @@ if __name__ == "__main__":
         pedestrians_df = pd.read_csv("Pedestrian_Counting_System_-_Monthly__counts_per_hour.csv")
 
     monthly_df = combine_df(sensor_location_df, pedestrians_df, "month", 10)
+    monthly_df.to_csv("Monthly.csv")
+
     daily_df = combine_df(sensor_location_df, pedestrians_df, "day", 10)
+    daily_df.to_csv("Daily.csv")
