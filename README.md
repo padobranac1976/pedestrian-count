@@ -11,7 +11,7 @@ The features that were implemented are
 - Accumulate daily / monthly pedestrian totals
 - Combine information from sensor location and pedestrian count tables into a single dataframe
 - Store top 10 locations per month / day in a database
-- 
+
 ## Running the program
 To run the program sucessfully you need to setup the appropriate environment using the command below. Note: "env.yml" file is provided in this repo.
 ```
