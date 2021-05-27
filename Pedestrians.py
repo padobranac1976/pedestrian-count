@@ -36,13 +36,13 @@ def update_date_time(df, mode):
     print("Converting date / time format to '{}'-ly frequency...".format(mode))
     df_c = df.copy()
     if mode == "day":
-        dates = np.array([i[:10] for i in df["Date_Time"]])
-        df_c["Date_Time"] = dates
-        df_c = df_c.drop(columns=["ID", "Time", "Sensor_Name", "direction_1", "direction_2"])
+        dates = np.array([i[:10] for i in df["date_time"]])
+        df_c["date_time"] = dates
+        df_c = df_c.drop(columns=["id", "time", "direction_1", "direction_2"])
     elif mode == "month":
-        dates = np.array([i[:3]+i[6:10] for i in df["Date_Time"]])
-        df_c["Date_Time"] = dates
-        df_c = df_c.drop(columns=["ID", "Mdate", "Day", "Time", "Sensor_Name", "direction_1", "direction_2"])
+        dates = np.array([i[:7] for i in df["date_time"]])
+        df_c["date_time"] = dates
+        df_c = df_c.drop(columns=["id", "mdate", "day", "time", "direction_1", "direction_2"])
     return df_c
 
 
@@ -53,25 +53,25 @@ def accumulate_pedestrians(df, top_x, mode):
     combined had been dropped from the table
     """
     df1 = update_date_time(df, mode)
-    dates = df1["Date_Time"].unique()
+    dates = df1["date_time"].unique()
 
     acc_ped_df = None
     top = None
     for i in progressbar(range(len(dates)), "Accumulating pedestrians / {}: ".format(mode)):
-        frame = df1[df1["Date_Time"] == dates[i]]
+        frame = df1[df1["date_time"] == dates[i]]
         sensors = frame["sensor_id"].unique()
         for j in range(len(sensors)):
             sensor_info = frame[frame["sensor_id"] == sensors[j]]
-            pedestrian_count = sum(sensor_info["Hourly_Counts"])
+            pedestrian_count = sum(map(int, sensor_info["hourly_counts"]))
             new_frame = pd.DataFrame(sensor_info.iloc[0].values).T
             new_frame.columns = sensor_info.columns
-            new_frame = new_frame.rename(columns={'Hourly_Counts': 'Cumulative_Counts'})
-            new_frame["Cumulative_Counts"] = pedestrian_count
+            new_frame = new_frame.rename(columns={'hourly_counts': 'cumulative_counts'})
+            new_frame["cumulative_counts"] = pedestrian_count
             if top is None:
                 top = new_frame
             else:
                 top = top.append(new_frame)
-        top = top.sort_values("Cumulative_Counts", ascending=False)[:top_x]
+        top = top.sort_values("cumulative_counts", ascending=False)[:top_x]
         if acc_ped_df is None:
             acc_ped_df = top
         else:
@@ -88,7 +88,16 @@ if __name__ == "__main__":
     print(["Loading data from local files...", "Loading data from the web API..."][open_from_web])
 
     if open_from_web:
-        client = Socrata("data.melbourne.vic.gov.au", None)
+        user = input("Enter Your Socrata user name:")
+        pwd = input("Enter Your Socrata password:")
+        my_token = input("Enter Your App Token:")
+        if user == "" or pwd == "" or my_token == "":
+            client = Socrata("data.melbourne.vic.gov.au", None)
+        else:
+            client = Socrata("data.melbourne.vic.gov.au",
+                             my_token,
+                             username=user,
+                             password=pwd)
 
         sensor_locations = client.get("h57g-5234", limit=100)
         sensor_location_df = pd.DataFrame.from_records(sensor_locations)
@@ -105,7 +114,10 @@ if __name__ == "__main__":
     all_data_df.to_csv("all_data.csv")
 
     monthly_df = accumulate_pedestrians(all_data_df, 10, "month")
+    print("Saving Monthly Data to CSV...")
     monthly_df.to_csv("monthly_data.csv")
 
     daily_df = accumulate_pedestrians(all_data_df, 10, "day")
+    print("Saving Daily Data to CSV...")
     daily_df.to_csv("daily_data.csv")
+    print("DONE!")
