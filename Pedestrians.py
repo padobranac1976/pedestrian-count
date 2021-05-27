@@ -97,7 +97,7 @@ if __name__ == "__main__":
         pedestrians_df = pd.DataFrame.from_records(pedestrians)
     else:
         sensor_location_df = pd.read_csv("Pedestrian_Counting_System_-_Sensor_Locations.csv")
-        pedestrians_df = pd.read_csv("Pedestrian_Counting_System_-_Monthly__counts_per_hour.csv")
+        pedestrians_df = pd.read_csv("Pedestrian_Counting_System_-_Monthly__counts_per_hour_.csv")
 
     pedestrians_df = pedestrians_df.rename(columns={'Sensor_ID': 'sensor_id'})
     print("Merging data by sensor ID...")
