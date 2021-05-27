@@ -8,8 +8,8 @@ https://data.melbourne.vic.gov.au/Transport/Pedestrian-Counting-System-Sensor-Lo
 ## Features
 The features that were implemented are 
 - Parse through data (either directly from the web or locally if data exists)
-- Accumulate daily / monthly pedestrian totals
 - Combine information from sensor location and pedestrian count tables into a single dataframe
+- Accumulate daily / monthly pedestrian totals
 - Store top 10 locations per month / day in a database
 
 ## Running the program
@@ -27,3 +27,8 @@ Once everything is set up the program by typing
 ```
 python pedestrians.py
 ```
+If you already have the pedestrian data and sensor location data on you machine locally you can use the following command
+```
+python pedestrians.py -l
+```
+
