@@ -35,6 +35,6 @@ If you already have the data you want to upload to s3 ready then run the file wi
 ```
 python Pedestrians.py -csv
 ```
-Note that for this option you will have to enter the file names of the corresponding data files
+Note that for this option you will have to enter the file names of the corresponding data files. Also note that to access AWS storage you will have to enter your bucket along with the API keys. Program will prompt for this info after it has analysed the data.
 
 
