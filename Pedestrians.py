@@ -87,9 +87,9 @@ def get_aws_keys():
                     AWS secret access key
                     AWS bucket to store / retrieve the data to / from
     """
-    bucket = input("Enter the AWS S3 bucket you would like to use:")
-    acc_key = input("Enter the AWS access key for your S3 storage:")
-    secret_key = input("Enter the AWS secret access key for your S3 storage:")
+    bucket = input("Enter the AWS S3 bucket you would like to use: ")
+    acc_key = input("Enter the AWS access key for your S3 storage: ")
+    secret_key = input("Enter the AWS secret access key for your S3 storage: ")
     return bucket, acc_key, secret_key
 
 
@@ -107,34 +107,38 @@ def upload_file_to_s3(file, b, a_key, secret):
     return 0
 
 
-def query_data(b, a_key, secret):
+def query_data(b, a_key, secret, month):
     """Test query - Prints data for a given month directly from AWS S3 bucket
     Inputs: file name
             AWS access key
             AWS secret access key
             AWS bucket to store the data to
+            month to query
     """
     s3_client = boto3.client('s3',
                              aws_access_key_id=a_key,
                              aws_secret_access_key=secret)
 
-    month = input("Chose a month you would like to query (YYYY-MM)")
     response = s3_client.select_object_content(Bucket=b, Key='monthly_data.csv',
                                                ExpressionType='SQL',
                                                Expression="SELECT \"sensor_name_y\" FROM s3object s where s."
-                                                          "\"date_time\" = {}".format(month),
+                                                          "\"date_time\" = '{}'".format(month),
                                                InputSerialization={'CSV': {"FileHeaderInfo": "Use"},
                                                                    'CompressionType': 'NONE'},
                                                OutputSerialization={'CSV': {}},)
-
+    result = None
     for event in response['Payload']:
         if 'Records' in event:
             records = event['Records']['Payload'].decode('utf-8')
-            print(records)
+            printable_records = records.split("\n")[:3]
+            print("Top 3 locations for {}:\n".format(month)+"\n".join(printable_records))
+            result = records
         elif 'Stats' in event:
             stats = event['Stats']['Details']
             print("Stats: bytesScanned/Processed - {}, bytesReturned - {} ".
                   format(stats['BytesScanned'], stats['BytesReturned']))
+
+    return result
 
 
 if __name__ == "__main__":
@@ -146,8 +150,8 @@ if __name__ == "__main__":
             open_from_web = True
         if "-csv" in arguments:
             run_analysis = False
-            monthly_file_name = input("Enter the name of the file that contains MONTHLY data")
-            daily_file_name = input("Enter the name of the file that contains DAILY data")
+            monthly_file_name = input("Enter the name of the file that contains MONTHLY data: ")
+            daily_file_name = input("Enter the name of the file that contains DAILY data: ")
         else:
             run_analysis = True
             monthly_file_name = "monthly_data.csv"
@@ -186,10 +190,12 @@ if __name__ == "__main__":
         print("Saving Daily Data to CSV...")
         daily_df.to_csv(daily_file_name, index=False)
 
-    access_key, secret_access_key, s3_bucket = get_aws_keys()
+    s3_bucket, access_key, secret_access_key = get_aws_keys()
     print("Uploading data to AWS S3...")
-    upload_file_to_s3(monthly_file_name, access_key, secret_access_key, s3_bucket)
-    upload_file_to_s3(daily_file_name, access_key, secret_access_key, s3_bucket)
+    upload_file_to_s3(monthly_file_name, s3_bucket, access_key, secret_access_key)
+    upload_file_to_s3(daily_file_name, s3_bucket, access_key, secret_access_key)
     print("Querying data from AWS S3...")
-    query_data(s3_bucket, access_key, secret_access_key)
+    query_month = input("Chose a month you would like to query (YYYY-MM): ")
+    query_data(s3_bucket, access_key, secret_access_key, query_month)
+    print()
     print("DONE!")
