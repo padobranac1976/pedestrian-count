@@ -99,11 +99,18 @@ if __name__ == "__main__":
             open_from_web = True
         if "-csv" in arguments:
             run_analysis = False
+            monthly_file_name = input("Enter the name of the file that contains MONTHLY data")
+            daily_file_name = input("Enter the name of the file that contains DAILY data")
         else:
             run_analysis = True
+            monthly_file_name = "monthly_data.csv"
+            daily_file_name = "daily_data.csv"
     else:
         open_from_web = True
         run_analysis = True
+        monthly_file_name = "monthly_data.csv"
+        daily_file_name = "daily_data.csv"
+
     print(["Loading data from local files...", "Loading data from the web API..."][open_from_web])
 
     if open_from_web:
@@ -125,12 +132,12 @@ if __name__ == "__main__":
 
         monthly_df = accumulate_pedestrians(all_data_df, 10, "month")
         print("Saving Monthly Data to CSV...")
-        monthly_df.to_csv("monthly_data.csv")
+        monthly_df.to_csv(monthly_file_name)
 
         daily_df = accumulate_pedestrians(all_data_df, 10, "day")
         print("Saving Daily Data to CSV...")
-        daily_df.to_csv("daily_data.csv")
+        daily_df.to_csv(daily_file_name)
 
-    upload_file_to_s3("daily_data.csv")
-    upload_file_to_s3("monthly_data.csv")
+    upload_file_to_s3(monthly_file_name)
+    upload_file_to_s3(daily_file_name)
     print("DONE!")
