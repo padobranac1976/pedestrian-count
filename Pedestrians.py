@@ -55,12 +55,13 @@ def accumulate_pedestrians(df, top_x, mode):
     """
     df1 = update_date_time(df, mode)
     dates = df1["date_time"].unique()
-
+    dates.sort()
     acc_ped_df = None
-    top = None
     for i in progressbar(range(len(dates)), "Accumulating pedestrians / {}: ".format(mode)):
+        top = None
         frame = df1[df1["date_time"] == dates[i]]
         sensors = frame["sensor_id"].unique()
+        sensors.sort()
         for j in range(len(sensors)):
             sensor_info = frame[frame["sensor_id"] == sensors[j]]
             pedestrian_count = sum(map(int, sensor_info["hourly_counts"]))
@@ -96,7 +97,7 @@ def upload_file_to_s3(file):
                              aws_secret_access_key=secret_access_key)
 
     s3_client.upload_file(file, upload_file_bucket, str(file))
-    return
+    return 0
 
 
 if __name__ == "__main__":
@@ -129,6 +130,7 @@ if __name__ == "__main__":
 
         pedestrians = client.get("b2ak-trbp", limit=4000000)
         pedestrians_df = pd.DataFrame.from_records(pedestrians)
+        client.close()
     else:
         sensor_location_df = pd.read_csv("Pedestrian_Counting_System_-_Sensor_Locations.csv")
         pedestrians_df = pd.read_csv("Pedestrian_Counting_System_-_Monthly__counts_per_hour_.csv")
