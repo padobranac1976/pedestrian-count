@@ -31,4 +31,9 @@ If you already have the pedestrian data and sensor location data on you machine 
 ```
 python pedestrians.py -l
 ```
+If you already have the data you want to upload to s3 ready then run the file with "-csv" option
+```
+python pedestrians.py -csv
+```
+
 
