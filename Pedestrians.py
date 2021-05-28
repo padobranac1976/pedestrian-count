@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
 import sys
+import boto3
 from sodapy import Socrata
+from s3_api import access_key, secret_access_key
 
 BUFFER = 56
 
@@ -79,26 +81,33 @@ def accumulate_pedestrians(df, top_x, mode):
     return acc_ped_df
 
 
+def upload_file_to_s3(file):
+    s3_client = boto3.client('s3',
+                             aws_access_key_id=access_key,
+                             aws_secret_access_key=secret_access_key)
+    upload_file_bucket = 'belong-test-bucket'
+    s3_client.upload_file(file, upload_file_bucket, str(file))
+    return
+
+
 if __name__ == "__main__":
     arguments = sys.argv
-    if len(arguments) > 1 and arguments[1] == "-l":
-        open_from_web = False
+    if len(arguments) > 1:
+        if "-l" in arguments:
+            open_from_web = False
+        else:
+            open_from_web = True
+        if "-csv" in arguments:
+            run_analysis = False
+        else:
+            run_analysis = True
     else:
         open_from_web = True
+        run_analysis = True
     print(["Loading data from local files...", "Loading data from the web API..."][open_from_web])
 
     if open_from_web:
-        user = input("Enter Your Socrata user name:")
-        pwd = input("Enter Your Socrata password:")
-        my_token = input("Enter Your App Token:")
-        if user == "" or pwd == "" or my_token == "":
-            client = Socrata("data.melbourne.vic.gov.au", None)
-        else:
-            client = Socrata("data.melbourne.vic.gov.au",
-                             my_token,
-                             username=user,
-                             password=pwd)
-
+        client = Socrata("data.melbourne.vic.gov.au", None)
         sensor_locations = client.get("h57g-5234", limit=100)
         sensor_location_df = pd.DataFrame.from_records(sensor_locations)
 
@@ -108,16 +117,20 @@ if __name__ == "__main__":
         sensor_location_df = pd.read_csv("Pedestrian_Counting_System_-_Sensor_Locations.csv")
         pedestrians_df = pd.read_csv("Pedestrian_Counting_System_-_Monthly__counts_per_hour_.csv")
 
-    pedestrians_df = pedestrians_df.rename(columns={'Sensor_ID': 'sensor_id'})
-    print("Merging data by sensor ID...")
-    all_data_df = pd.merge(sensor_location_df, pedestrians_df, on="sensor_id")
-    all_data_df.to_csv("all_data.csv")
+    if run_analysis:
+        pedestrians_df = pedestrians_df.rename(columns={'Sensor_ID': 'sensor_id'})
+        print("Merging data by sensor ID...")
+        all_data_df = pd.merge(sensor_location_df, pedestrians_df, on="sensor_id")
+        all_data_df.to_csv("all_data.csv")
 
-    monthly_df = accumulate_pedestrians(all_data_df, 10, "month")
-    print("Saving Monthly Data to CSV...")
-    monthly_df.to_csv("monthly_data.csv")
+        monthly_df = accumulate_pedestrians(all_data_df, 10, "month")
+        print("Saving Monthly Data to CSV...")
+        monthly_df.to_csv("monthly_data.csv")
 
-    daily_df = accumulate_pedestrians(all_data_df, 10, "day")
-    print("Saving Daily Data to CSV...")
-    daily_df.to_csv("daily_data.csv")
+        daily_df = accumulate_pedestrians(all_data_df, 10, "day")
+        print("Saving Daily Data to CSV...")
+        daily_df.to_csv("daily_data.csv")
+
+    upload_file_to_s3("daily_data.csv")
+    upload_file_to_s3("monthly_data.csv")
     print("DONE!")
