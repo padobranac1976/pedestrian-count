@@ -25,15 +25,15 @@ activate belong
 
 Once everything is set up the program by typing
 ```
-python pedestrians.py
+python Pedestrians.py
 ```
 If you already have the pedestrian data and sensor location data on you machine locally you can use the following command
 ```
-python pedestrians.py -l
+python Pedestrians.py -l
 ```
 If you already have the data you want to upload to s3 ready then run the file with "-csv" option
 ```
-python pedestrians.py -csv
+python Pedestrians.py -csv
 ```
 Note that for this option you will have to enter the file names of the corresponding data files
 
