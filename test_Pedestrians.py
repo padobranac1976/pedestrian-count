@@ -4,43 +4,85 @@ import sys
 import boto3
 from sodapy import Socrata
 import unittest
+import Pedestrians
 
 
 class TestSocrata(unittest.TestCase):
-
-    def test_pedestrian_data_columns(self):
-        client = Socrata("data.melbourne.vic.gov.au", None)
-        pedestrians = client.get("b2ak-trbp", limit=10)
-        pedestrians_df = pd.DataFrame.from_records(pedestrians)
-        self.assertEqual(list(pedestrians_df.columns),
-                         ['id', 'date_time', 'year', 'month', 'mdate', 'day', 'time', 'sensor_id', 'sensor_name',
-                          'hourly_counts'])
-        client.close()
-
-    def test_pedestrian_data_rows(self):
+    @classmethod
+    def setUpClass(self):
         client = Socrata("data.melbourne.vic.gov.au", None)
         pedestrians = client.get("b2ak-trbp", limit=5)
-        pedestrians_df = pd.DataFrame.from_records(pedestrians)
-        self.assertEqual(pedestrians_df.shape[0], 5, "There should be Should be {} records, {} have been found".
-                         format(5, pedestrians_df.shape[0]))
+        sensor_locations = client.get("h57g-5234", limit=10)
+        self.sensor_location_df = pd.DataFrame.from_records(sensor_locations)
+        self.pedestrians_df = pd.DataFrame.from_records(pedestrians)
         client.close()
 
-    def test_sensor_data_columns(self):
-        client = Socrata("data.melbourne.vic.gov.au", None)
-        sensor_locations = client.get("h57g-5234", limit=10)
-        sensor_location_df = pd.DataFrame.from_records(sensor_locations)
-        self.assertEqual(list(sensor_location_df.columns),
+    def test_pedestrian_data_loading(self):
+        self.assertEqual(list(self.pedestrians_df.columns),
+                         ['id', 'date_time', 'year', 'month', 'mdate', 'day', 'time', 'sensor_id', 'sensor_name',
+                          'hourly_counts'])
+
+        self.assertEqual(self.pedestrians_df.shape[0], 5, "There should be Should be {} records, {} have been found".
+                         format(5, self.pedestrians_df.shape[0]))
+
+    def test_sensor_data_loading(self):
+        self.assertEqual(list(self.sensor_location_df.columns),
                          ['sensor_id', 'sensor_description', 'sensor_name', 'installation_date', 'status',
                           'direction_1', 'direction_2', 'latitude', 'longitude', 'location', 'note'])
-        client.close()
 
-    def test_sensor_data_rows(self):
+        self.assertEqual(self.sensor_location_df.shape[0], 10, "There should be Should be {} records, {} have been "
+                                                               "found".format(10, self.sensor_location_df.shape[0]))
+
+
+class TestLogic(unittest.TestCase):
+    @classmethod
+    def setUpClass(self):
         client = Socrata("data.melbourne.vic.gov.au", None)
-        sensor_locations = client.get("h57g-5234", limit=5)
-        sensor_location_df = pd.DataFrame.from_records(sensor_locations)
-        self.assertEqual(sensor_location_df.shape[0], 5, "There should be Should be {} records, {} have been found".
-                         format(5, sensor_location_df.shape[0]))
+        pedestrians = client.get("b2ak-trbp", limit=500)
+        self.pedestrians_df = pd.DataFrame.from_records(pedestrians)
+        sensor_locations = client.get("h57g-5234", limit=10)
+        self.sensor_location_df = pd.DataFrame.from_records(sensor_locations)
         client.close()
+        self.all_data_df = pd.merge(self.sensor_location_df, self.pedestrians_df, on="sensor_id")
+        self.month_data_df = Pedestrians.update_date_time(self.all_data_df, "month")
+        self.day_data_df = Pedestrians.update_date_time(self.all_data_df, "day")
+
+    def test_data_merge(self):
+        answer = ['sensor_id', 'sensor_description', 'sensor_name_x', 'installation_date', 'status', 'direction_1',
+                  'direction_2', 'latitude', 'longitude', 'location', 'note', 'id', 'date_time', 'year', 'month',
+                  'mdate', 'day', 'time', 'sensor_name_y', 'hourly_counts']
+        self.assertEqual(list(self.all_data_df.columns), answer)
+
+        self.assertEqual(self.all_data_df.shape[0], 64, "There should be Should be {} records, {} have been found".
+                         format(13, self.all_data_df.shape[0]))
+
+    def test_date_update_for_month(self):
+        answer = ['sensor_id', 'sensor_description', 'sensor_name_x', 'installation_date', 'status', 'latitude',
+                  'longitude', 'location', 'note', 'date_time', 'year', 'month', 'sensor_name_y', 'hourly_counts']
+        self.assertEqual(list(self.month_data_df.columns), answer)
+        self.assertEqual(self.month_data_df["date_time"][0], '2019-11')
+
+    def test_date_update_for_day(self):
+        answer = ['sensor_id', 'sensor_description', 'sensor_name_x', 'installation_date', 'status', 'latitude',
+                  'longitude', 'location', 'note', 'date_time', 'year', 'month', 'mdate', 'day', 'sensor_name_y',
+                  'hourly_counts']
+        self.assertEqual(list(self.day_data_df.columns), answer)
+        self.assertEqual(self.day_data_df["date_time"][0], '2019-11-01')
+
+    def test_accumulate_pedestrians_for_month(self):
+        new_frame = Pedestrians.accumulate_pedestrians(self.all_data_df, 10, "month")
+        self.assertEqual(list(new_frame["cumulative_counts"][0:3]), [418, 12082, 11323])
+
+    def test_accumulate_pedestrians_for_day(self):
+        new_frame = Pedestrians.accumulate_pedestrians(self.all_data_df, 10, "day")
+        self.assertEqual(list(new_frame["cumulative_counts"][0:3]), [418, 11284, 10610])
+
+
+class TestAWS(unittest.TestCase):
+    def test_file_upload(self):
+        file = "daily_data_backup.csv"
+        answer = Pedestrians.upload_file_to_s3(file)
+        self.assertEqual(answer, 0)
 
 
 if __name__ == '__main__':
