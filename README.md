@@ -35,5 +35,6 @@ If you already have the data you want to upload to s3 ready then run the file wi
 ```
 python pedestrians.py -csv
 ```
+Note that for this option you will have to enter the file names of the corresponding data files
 
 
