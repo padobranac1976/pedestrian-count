@@ -1,10 +1,8 @@
-import numpy as np
 import pandas as pd
-import sys
-import boto3
 from sodapy import Socrata
 import unittest
 import Pedestrians
+# from s3_api import s3_bucket, access_key, secret_access_key  # Uncomment only if you have stored the info in s3_api.py
 
 
 class TestSocrata(unittest.TestCase):
@@ -78,11 +76,17 @@ class TestLogic(unittest.TestCase):
         self.assertEqual(list(new_frame["cumulative_counts"][0:3]), [418, 11284, 10610])
 
 
-class TestAWS(unittest.TestCase):
-    def test_file_upload(self):
-        file = "daily_data_backup.csv"
-        answer = Pedestrians.upload_file_to_s3(file)
-        self.assertEqual(answer, 0)
+## uncomment once you have saved s3_bucket, access_key and secret_access_key in a file "s3_api.py"
+# class TestAWS(unittest.TestCase):
+#     def test_file_upload(self):
+#         file = "monthly_data.csv"
+#         answer = Pedestrians.upload_file_to_s3(file, s3_bucket, access_key, secret_access_key)
+#         self.assertEqual(answer, 0)
+#
+#     def test_query(self):
+#         month = '2021-01'
+#         answer = Pedestrians.query_data(s3_bucket, access_key, secret_access_key, month)[:23]
+#         self.assertEqual(answer, "Flinders La-Swanston St")
 
 
 if __name__ == '__main__':
