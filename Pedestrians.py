@@ -3,7 +3,6 @@ import pandas as pd
 import sys
 import boto3
 from sodapy import Socrata
-from s3_api import access_key, secret_access_key
 
 BUFFER = 56
 
