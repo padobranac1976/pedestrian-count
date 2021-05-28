@@ -81,10 +81,20 @@ def accumulate_pedestrians(df, top_x, mode):
 
 
 def upload_file_to_s3(file):
+    """Uploads a specified file to AWS S3 bucket
+
+    Inputs:         file name
+    Manual inputs:  AWS access key
+                    AWS secret access key
+                    AWS bucket to store the data to
+    """
+    upload_file_bucket = input("Enter the AWS S3 bucket you would like to use:")
+    access_key = input("Enter the AWS access key for your S3 storage:")
+    secret_access_key = input("Enter the AWS secret access key for your S3 storage:")
     s3_client = boto3.client('s3',
                              aws_access_key_id=access_key,
                              aws_secret_access_key=secret_access_key)
-    upload_file_bucket = 'belong-test-bucket'
+
     s3_client.upload_file(file, upload_file_bucket, str(file))
     return
 
